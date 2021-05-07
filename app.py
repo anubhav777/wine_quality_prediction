@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-%matplotlib inline
+from function import outlier_filter,one_off_filter
 from collections import Counter
 
 df=pd.read_csv('winequality-red.csv')
@@ -22,12 +22,7 @@ for i in outl.columns:
 
 df['sulphates'].describe()
 
-def outlier_filter(arr):
-    IQR=df[arr].quantile(0.75) - df[arr].quantile(0.25)
-    lower_boundaries = df[arr].quantile(0.25) - (3 * IQR)
-    upper_boundaries = df[arr].quantile(0.75) + (3 * IQR)
-    df.drop(df[df[arr] > upper_boundaries].index,inplace=True)
-    print(lower_boundaries,upper_boundaries,arr)
+
 
 IQR=df.sulphates.quantile(0.75) - df.sulphates.quantile(0.25)
 
@@ -85,3 +80,77 @@ from sklearn.metrics import mean_squared_error,r2_score
 mean_squared_error(y_test,y_pred, squared=False)
 
 r2_score(y_test,y_pred)
+
+from sklearn.linear_model import Lasso
+
+ls=Lasso(alpha=0.001)
+
+ls.fit(X_train,y_train)
+
+ls_pred=ls.predict(X_test)
+
+print(ls.score(X_train,y_train))
+print(ls.score(X_test,y_test))
+
+r2_score(y_test,ls_pred)
+
+mean_squared_error(y_test,ls_pred, squared=False)
+
+
+
+one_off_filter(y_pred,y_test)
+one_off_filter(dc_pred,y_test)
+
+print(precision_score(y_test,np.round(y_pred), average = 'weighted'),
+recall_score(y_test,np.round(y_pred), average = 'weighted'),
+f1_score(y_test,np.round(y_pred), average = 'weighted'))
+
+
+print(precision_score(y_test,np.round(dc_pred), average = 'weighted'),
+recall_score(y_test,np.round(dc_pred), average = 'weighted'),
+f1_score(y_test,np.round(dc_pred), average = 'weighted'))
+
+y=np.asarray([1 if i>=7 else 0 for i in y])
+Counter(y)
+
+X_train,X_test,y_train,y_test=train_test_split(X,y)
+Counter(y_train)
+
+Counter(y_test)
+
+from sklearn.metrics import roc_auc_score,roc_curve
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import cross_val_score
+
+#Linear Regression
+lr=LogisticRegression(solver='lbfgs')
+lr.fit(X_train,y_train)
+lr_pred=lr.predict_proba(X_test)
+cross_val_score(lr,X_train,y_train,cv=10,scoring='f1')
+
+roc_auc_score(y_test,lr_pred[:,1])
+
+zer=[]
+for i in y:
+    if i == 0:
+        zer.append(i)
+unbal=(len(zer)/len(y))*100
+unbal
+
+
+ad=AdaBoostClassifier()
+ad.fit(X_train,y_train)
+ad_pred=ad.predict_proba(X_test)
+
+roc_auc_score(y_test,ad_pred[:,1])
+
+
+dt=DecisionTreeClassifier() 
+dt.fit(X_train,y_train) 
+dt_pred=dt.predict_proba(X_test)
+
+roc_auc_score(y_test,dt_pred[:,1])
+
+cross_val_score(ad,X_train,y_train,cv=10,scoring='f1')
